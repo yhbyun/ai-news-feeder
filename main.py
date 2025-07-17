@@ -1,9 +1,11 @@
 import os
+import sys
 import smtplib
 import requests
 import google.generativeai as genai
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from email.header import Header
 from datetime import datetime, timedelta
 
 # --- 설정 ---
@@ -44,10 +46,7 @@ def get_ai_news():
         return articles[:ARTICLE_COUNT]
     except requests.exceptions.RequestException as e:
         print(f"뉴스 API 요청 중 오류 발생: {e}")
-        return []
-    except Exception as e:
-        print(f"뉴스 처리 중 알 수 없는 오류 발생: {e}")
-        return []
+        raise  # 예외를 다시 발생시켜 상위에서 처리하도록 함
 
 def summarize_with_gemini(article):
     """Gemini API를 사용하여 뉴스 기사를 한국어로 요약합니다."""
@@ -66,6 +65,7 @@ def summarize_with_gemini(article):
         return summary
     except Exception as e:
         print(f"Gemini API 호출 중 오류 발생: {e}")
+        # Gemini 요약 실패는 전체 프로세스를 중단시키지 않고, 실패 메시지를 반환
         return "요약 생성에 실패했습니다."
 
 def send_email(summaries):
@@ -104,22 +104,32 @@ def send_email(summaries):
             server.login(SMTP_USER, SMTP_PASSWORD)
             server.sendmail(SMTP_USER, RECIPIENT_EMAIL, msg.as_string())
         print(f"이메일이 성공적으로 {RECIPIENT_EMAIL} 주소로 발송되었습니다.")
-    except smtplib.SMTPException as e:
-        print(f"이메일 발송 중 오류 발생: {e}")
     except Exception as e:
-        print(f"이메일 발송 중 알 수 없는 오류 발생: {e}")
+        print(f"이메일 발송 중 오류 발생: {e}")
+        raise # 예외를 다시 발생시켜 상위에서 처리하도록 함
 
+def main():
+    """스크립트의 메인 실행 함수"""
+    try:
+        # 1. 뉴스 가져오기
+        articles = get_ai_news()
+
+        # 2. 뉴스 요약하기
+        summarized_articles = []
+        if articles:
+            for article in articles:
+                summary = summarize_with_gemini(article)
+                summarized_articles.append((article['title'], summary, article['url']))
+
+        # 3. 이메일 보내기
+        send_email(summarized_articles)
+        
+        print("AI 뉴스 피더 작업이 성공적으로 완료되었습니다.")
+
+    except Exception as e:
+        # 스크립트 실행 중 처리되지 않은 예외가 발생하면 오류 메시지를 출력하고 실패 코드로 종료
+        print(f"스크립트 실행 중 심각한 오류가 발생했습니다: {e}", file=sys.stderr)
+        sys.exit(1)
 
 if __name__ == "__main__":
-    # 1. 뉴스 가져오기
-    articles = get_ai_news()
-
-    # 2. 뉴스 요약하기
-    summarized_articles = []
-    if articles:
-        for article in articles:
-            summary = summarize_with_gemini(article)
-            summarized_articles.append((article['title'], summary, article['url']))
-
-    # 3. 이메일 보내기
-    send_email(summarized_articles)
+    main()
