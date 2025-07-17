@@ -79,7 +79,7 @@ def send_email(summaries):
     subject = f"📰 오늘의 AI 뉴스 요약 ({today_str})"
 
     # 이메일 본문 (HTML)
-    html_body = f"<html><body><h2>{subject}</h2>"
+    html_body = f"<html><head><meta charset='utf-8'></head><body><h2>{subject}</h2>"
     for title, summary, url in summaries:
         # HTML에서 줄바꿈을 위해 \n을 <br>로 변경
         summary_html = summary.replace('\n', '<br>')
@@ -93,8 +93,10 @@ def send_email(summaries):
     msg = MIMEMultipart('alternative')
     msg['From'] = SMTP_USER
     msg['To'] = RECIPIENT_EMAIL
-    msg['Subject'] = subject
-    msg.attach(MIMEText(html_body, 'html'))
+    msg['Subject'] = Header(subject, 'utf-8') # 제목에 UTF-8 인코딩 적용
+
+    # 본문에 UTF-8 인코딩 적용
+    msg.attach(MIMEText(html_body, 'html', 'utf-8'))
 
     try:
         with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
