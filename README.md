@@ -44,7 +44,7 @@
 | `SMTP_PORT`            | SMTP 포트 번호 (보통 587 또는 465)         | `587`                    | **필수**  |
 | `SMTP_USER`            | 뉴스를 발송할 이메일 주소                    | `your-email@gmail.com`   | **필수**  |
 | `SMTP_PASSWORD`        | 위 이메일의 **앱 비밀번호**                  | `abcd efgh ijkl mnop`    | **필수**  |
-| `RECIPIENT_EMAIL`      | 뉴스를 수신할 이메일 주소                    | `recipient@example.com`  | **필수**  |
+| `RECIPIENT_EMAIL`      | 뉴스를 수신할 이메일 주소 (쉼표로 여러개 입력 가능) | `a@a.com,b@b.com`  | **필수**  |
 | `SENDER_NAME`          | 발신자 이름 (기본값: "AI 뉴스 알리미")     | `AI News`                | 선택 사항 |
 | `NEWS_ARTICLE_COUNT`   | 요약할 뉴스 기사의 개수 (기본값: 5)          | `3`                      | 선택 사항 |
 

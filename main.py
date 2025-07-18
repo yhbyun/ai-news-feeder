@@ -17,7 +17,8 @@ SMTP_HOST = os.getenv("SMTP_HOST")  # 예: "smtp.gmail.com"
 SMTP_PORT = int(os.getenv("SMTP_PORT", 587))
 SMTP_USER = os.getenv("SMTP_USER")  # 보내는 사람 이메일
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD") # 보내는 사람 이메일 비밀번호 또는 앱 비밀번호
-RECIPIENT_EMAIL = os.getenv("RECIPIENT_EMAIL") # 받는 사람 이메일
+# 쉼표로 구분된 여러 이메일 주소를 리스트로 변환
+RECIPIENT_EMAILS = [email.strip() for email in os.getenv("RECIPIENT_EMAIL", "").split(',') if email.strip()]
 SENDER_NAME = os.getenv("SENDER_NAME", "AI 뉴스 알리미") # 보내는 사람 이름
 ARTICLE_COUNT = int(os.getenv("NEWS_ARTICLE_COUNT", 5)) # 요약할 뉴스 기사 수 (기본값: 5)
 
@@ -75,6 +76,9 @@ def send_email(summaries):
     if not summaries:
         print("요약된 뉴스가 없어 이메일을 발송하지 않습니다.")
         return
+    if not RECIPIENT_EMAILS:
+        print("수신자 이메일이 설정되지 않아 이메일을 발송하지 않습니다.")
+        return
 
     print("이메일 발송을 시작합니다...")
     today_str = datetime.now().strftime('%Y년 %m월 %d일')
@@ -92,23 +96,25 @@ def send_email(summaries):
         )
     html_body += "</body></html>"
 
-    msg = MIMEMultipart('alternative')
-    msg['From'] = formataddr((str(Header(SENDER_NAME, 'utf-8')), SMTP_USER))
-    msg['To'] = RECIPIENT_EMAIL
-    msg['Subject'] = Header(subject, 'utf-8') # 제목에 UTF-8 인코딩 적용
-
-    # 본문에 UTF-8 인코딩 적용
-    msg.attach(MIMEText(html_body, 'html', 'utf-8'))
-
     try:
         with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
             server.starttls()
             server.login(SMTP_USER, SMTP_PASSWORD)
-            server.sendmail(SMTP_USER, RECIPIENT_EMAIL, msg.as_string())
-        print(f"이메일이 성공적으로 {RECIPIENT_EMAIL} 주소로 발송되었습니다.")
+            
+            for recipient_email in RECIPIENT_EMAILS:
+                msg = MIMEMultipart('alternative')
+                msg['From'] = formataddr((str(Header(SENDER_NAME, 'utf-8')), SMTP_USER))
+                msg['To'] = recipient_email
+                msg['Subject'] = Header(subject, 'utf-8')
+                msg.attach(MIMEText(html_body, 'html', 'utf-8'))
+                
+                server.sendmail(SMTP_USER, recipient_email, msg.as_string())
+                print(f"이메일이 성공적으로 {recipient_email} 주소로 발송되었습니다.")
+
     except Exception as e:
         print(f"이메일 발송 중 오류 발생: {e}")
         raise # 예외를 다시 발생시켜 상위에서 처리하도록 함
+
 
 def main():
     """스크립트의 메인 실행 함수"""
