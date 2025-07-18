@@ -6,6 +6,7 @@ import google.generativeai as genai
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.header import Header
+from email.utils import formataddr
 from datetime import datetime, timedelta
 
 # --- 설정 ---
@@ -17,6 +18,7 @@ SMTP_PORT = int(os.getenv("SMTP_PORT", 587))
 SMTP_USER = os.getenv("SMTP_USER")  # 보내는 사람 이메일
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD") # 보내는 사람 이메일 비밀번호 또는 앱 비밀번호
 RECIPIENT_EMAIL = os.getenv("RECIPIENT_EMAIL") # 받는 사람 이메일
+SENDER_NAME = os.getenv("SENDER_NAME", "AI 뉴스 알리미") # 보내는 사람 이름
 ARTICLE_COUNT = int(os.getenv("NEWS_ARTICLE_COUNT", 5)) # 요약할 뉴스 기사 수 (기본값: 5)
 
 # Gemini API 설정
@@ -40,7 +42,7 @@ def get_ai_news():
         response.raise_for_status()  # HTTP 오류가 발생하면 예외를 발생시킵니다.
         articles = response.json().get("articles", [])
         print(f"총 {len(articles)}개의 뉴스를 발견했습니다.")
-        
+
         # 설정된 개수만큼 뉴스 반환
         print(f"상위 {ARTICLE_COUNT}개의 뉴스만 처리합니다.")
         return articles[:ARTICLE_COUNT]
@@ -91,7 +93,7 @@ def send_email(summaries):
     html_body += "</body></html>"
 
     msg = MIMEMultipart('alternative')
-    msg['From'] = SMTP_USER
+    msg['From'] = formataddr((str(Header(SENDER_NAME, 'utf-8')), SMTP_USER))
     msg['To'] = RECIPIENT_EMAIL
     msg['Subject'] = Header(subject, 'utf-8') # 제목에 UTF-8 인코딩 적용
 
@@ -123,7 +125,7 @@ def main():
 
         # 3. 이메일 보내기
         send_email(summarized_articles)
-        
+
         print("AI 뉴스 피더 작업이 성공적으로 완료되었습니다.")
 
     except Exception as e:

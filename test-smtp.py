@@ -1,6 +1,8 @@
 import os
 import smtplib
 from email.mime.text import MIMEText
+from email.header import Header
+from email.utils import formataddr
 from dotenv import load_dotenv
 
 # .env 파일에서 환경 변수를 로드합니다.
@@ -11,6 +13,7 @@ load_dotenv()
 sender_email = os.getenv("SMTP_USER")
 receiver_email = os.getenv("RECIPIENT_EMAIL")
 password = os.getenv("SMTP_PASSWORD")
+sender_name = os.getenv("SENDER_NAME", "AI 뉴스 알리미") # 보내는 사람 이름
 
 # 환경 변수가 제대로 로드되었는지 확인합니다.
 if not all([sender_email, receiver_email, password]):
@@ -22,8 +25,8 @@ body = "This is a test email with a non-breaking space: \xa0" # Contains \xa0
 
 # UTF-8 인코딩으로 MIMEText 객체를 생성합니다.
 msg = MIMEText(body, 'plain', 'utf-8')
-msg['Subject'] = subject
-msg['From'] = sender_email
+msg['Subject'] = Header(subject, 'utf-8')
+msg['From'] = formataddr((str(Header(sender_name, 'utf-8')), sender_email))
 msg['To'] = receiver_email
 
 try:
