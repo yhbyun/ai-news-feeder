@@ -33,6 +33,7 @@ jobs:
           SMTP_PORT: ${{ secrets.SMTP_PORT }}
           SMTP_USER: ${{ secrets.SMTP_USER }}
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
-          RECIPIENT_EMAIL: ${{ secrets.RECIPIENT_EMAIL }}
-          NEWS_ARTICLE_COUNT: ${{ secrets.NEWS_ARTICLE_COUNT }}
+          RECIPIENT_EMAIL: ${{ vars.RECIPIENT_EMAIL }}
+          SENDER_NAME: ${{ vars.SENDER_NAME }}
+          NEWS_ARTICLE_COUNT: ${{ vars.NEWS_ARTICLE_COUNT }}
         run: python main.py

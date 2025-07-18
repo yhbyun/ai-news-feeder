@@ -32,21 +32,28 @@
     -   [Gmail 앱 비밀번호 생성 가이드](https://support.google.com/accounts/answer/185833)
     -   [Naver 앱 비밀번호 생성 가이드](https://help.naver.com/service/5640_5642/19849/2-2.%20%EC%95%B1%20%EB%B9%84%EB%B0%80%EB%B2%88%ED%98%B8%EB%A5%BC%20%EC%84%A4%EC%A0%95%ED%95%B4%EC%9A%94.)
 
-4.  **GitHub Secrets 설정**:
+4.  **GitHub Secrets 및 Variables 설정**:
     -   코드를 업로드한 GitHub 저장소에서 **Settings > Secrets and variables > Actions** 메뉴로 이동합니다.
-    -   **New repository secret** 버튼을 눌러 아래 목록의 이름과 값으로 Secret을 등록합니다.
+    -   **Secrets** 탭에서는 민감한 정보를, **Variables** 탭에서는 그 외의 설정 값들을 등록합니다.
 
-| Secret 이름            | 설명                                       | 예시 값                  | 필수 여부 |
-| ---------------------- | ------------------------------------------ | ------------------------ | --------- |
-| `NEWS_API_KEY`         | News API에서 발급받은 키                     | `a1b2c3d4e5f67890...`    | **필수**  |
-| `GEMINI_API_KEY`       | Gemini API에서 발급받은 키                   | `AIzaSyA...`             | **필수**  |
-| `SMTP_HOST`            | 사용하시는 이메일 서비스의 SMTP 서버 주소    | `smtp.gmail.com`         | **필수**  |
-| `SMTP_PORT`            | SMTP 포트 번호 (보통 587 또는 465)         | `587`                    | **필수**  |
-| `SMTP_USER`            | 뉴스를 발송할 이메일 주소                    | `your-email@gmail.com`   | **필수**  |
-| `SMTP_PASSWORD`        | 위 이메일의 **앱 비밀번호**                  | `abcd efgh ijkl mnop`    | **필수**  |
-| `RECIPIENT_EMAIL`      | 뉴스를 수신할 이메일 주소 (쉼표로 여러개 입력 가능) | `a@a.com,b@b.com`  | **필수**  |
-| `SENDER_NAME`          | 발신자 이름 (기본값: "AI 뉴스 알리미")     | `AI News`                | 선택 사항 |
-| `NEWS_ARTICLE_COUNT`   | 요약할 뉴스 기사의 개수 (기본값: 5)          | `3`                      | 선택 사항 |
+    **Secrets (민감 정보)**
+    
+    | Secret 이름            | 설명                                       | 예시 값                  |
+    | ---------------------- | ------------------------------------------ | ------------------------ |
+    | `NEWS_API_KEY`         | News API에서 발급받은 키                     | `a1b2c3d4e5f67890...`    |
+    | `GEMINI_API_KEY`       | Gemini API에서 발급받은 키                   | `AIzaSyA...`             |
+    | `SMTP_HOST`            | 사용하시는 이메일 서비스의 SMTP 서버 주소    | `smtp.gmail.com`         |
+    | `SMTP_PORT`            | SMTP 포트 번호 (보통 587 또는 465)         | `587`                    |
+    | `SMTP_USER`            | 뉴스를 발송할 이메일 주소                    | `your-email@gmail.com`   |
+    | `SMTP_PASSWORD`        | 위 이메일의 **앱 비밀번호**                  | `abcd efgh ijkl mnop`    |
+
+    **Variables (설정)**
+
+    | Variable 이름          | 설명                                       | 예시 값                  | 기본값 |
+    | ---------------------- | ------------------------------------------ | ------------------------ | ------ |
+    | `RECIPIENT_EMAIL`      | 뉴스를 수신할 이메일 주소 (쉼표로 여러개 입력 가능) | `a@a.com,b@b.com`  | 없음   |
+    | `SENDER_NAME`          | 발신자 이름                                | `AI News`                | "AI 뉴스 알리미" |
+    | `NEWS_ARTICLE_COUNT`   | 요약할 뉴스 기사의 개수                      | `3`                      | `5`    |
 
 ## ▶️ 실행하기
 
