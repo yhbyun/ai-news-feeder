@@ -3,11 +3,19 @@ import sys
 import smtplib
 import requests
 import google.generativeai as genai
+import json
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.header import Header
 from email.utils import formataddr
 from datetime import datetime, timedelta
+from collections import defaultdict
+
+# --- 로컬 테스트용 .env 파일 로드 ---
+# GitHub Actions 환경에서는 이 부분이 실행되지 않도록 CI 환경 변수 확인
+if 'CI' not in os.environ:
+    from dotenv import load_dotenv
+    load_dotenv()
 
 # --- 설정 ---
 # GitHub Secrets나 .env 파일에서 환경 변수 로드
@@ -30,14 +38,29 @@ def get_ai_news():
     """News API를 통해 AI 관련 최신 뉴스를 가져옵니다."""
     print("AI 뉴스 수집을 시작합니다...")
     yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
+    
+    # 최신 트렌드를 반영한 검색 키워드
+    keywords = [
+        '"Artificial Intelligence"', '"Machine Learning"', 'LLM',
+        'OpenAI', 'ChatGPT', 'Sora',
+        'Google', 'Gemini',
+        'Anthropic', 'Claude',
+        'Meta', 'Llama',
+        'Perplexity', 'Cursor', 'Midjourney'
+    ]
+    query = " OR ".join(keywords)
+
     url = (
         "https://newsapi.org/v2/everything?"
-        "q=(AI OR Artificial Intelligence OR machine learning OR LLM OR OpenAI OR Google DeepMind)&"
+        f"q=({query})&"
         f"from={yesterday}&"
         "sortBy=popularity&"
         "language=en&"
         f"apiKey={NEWS_API_KEY}"
     )
+    
+    print(f"뉴스 검색어: {query}")
+
     try:
         response = requests.get(url)
         response.raise_for_status()  # HTTP 오류가 발생하면 예외를 발생시킵니다.
@@ -52,28 +75,40 @@ def get_ai_news():
         raise  # 예외를 다시 발생시켜 상위에서 처리하도록 함
 
 def summarize_with_gemini(article):
-    """Gemini API를 사용하여 뉴스 기사를 한국어로 요약합니다."""
-    print(f"'{article['title']}' 뉴스 요약을 시작합니다...")
+    """Gemini API를 사용하여 뉴스 기사를 한국어로 요약하고, 제목을 번역하며, 카테고리를 분류합니다."""
+    print(f"'{article['title']}' 뉴스 처리 시작...")
+    
     prompt = f"""
-    Please summarize the following news article in KOREAN.
-    Focus on the key points and keep it concise and easy to understand for a general audience.
+    Analyze the following news article and provide a response in JSON format.
+    The JSON object must contain three fields: 'korean_title', 'summary', and 'category'.
+    1.  'korean_title': Translate the original English title into natural Korean.
+    2.  'summary': Summarize the article's content in Korean. The summary should be concise and easy for a general audience to understand.
+    3.  'category': Classify the article into one of the following categories in Korean: "기술 동향", "산업 및 비즈니스", "정책 및 규제", "연구 및 개발", "기타".
 
-    Article Title: {article.get('title', 'N/A')}
+    Original Title: {article.get('title', 'N/A')}
     Article Content: {article.get('description', '') or article.get('content', '')}
     """
+    
     try:
         response = model.generate_content(prompt)
-        summary = response.text
-        print("뉴스 요약 완료.")
-        return summary
-    except Exception as e:
-        print(f"Gemini API 호출 중 오류 발생: {e}")
-        # Gemini 요약 실패는 전체 프로세스를 중단시키지 않고, 실패 메시지를 반환
-        return "요약 생성에 실패했습니다."
+        # Gemini 응답에서 JSON 부분만 추출
+        json_text = response.text.strip().replace("```json", "").replace("```", "")
+        result = json.loads(json_text)
+        print("뉴스 처리 완료.")
+        return result
+    except (Exception, json.JSONDecodeError) as e:
+        print(f"Gemini API 호출 또는 JSON 파싱 중 오류 발생: {e}")
+        # 실패 시 기본값 반환
+        return {
+            "korean_title": article.get('title', 'N/A'), # 오류 시 원본 제목 사용
+            "summary": "요약 생성에 실패했습니다.",
+            "category": "기타"
+        }
 
-def send_email(summaries):
-    """요약된 뉴스 내용을 이메일로 발송합니다."""
-    if not summaries:
+
+def send_email(summarized_articles):
+    """요약된 뉴스 내용을 카테고리별로 그룹화하여 이메일로 발송합니다."""
+    if not summarized_articles:
         print("요약된 뉴스가 없어 이메일을 발송하지 않습니다.")
         return
     if not RECIPIENT_EMAILS:
@@ -82,39 +117,48 @@ def send_email(summaries):
 
     print("이메일 발송을 시작합니다...")
     today_str = datetime.now().strftime('%Y년 %m월 %d일')
-    subject = f"📰 오늘의 AI 뉴스 요약 ({today_str})"
+    subject = f"📰 오늘의 AI 뉴스 ({today_str})"
+
+    # 카테고리별로 뉴스 그룹화
+    articles_by_category = defaultdict(list)
+    for article_data in summarized_articles:
+        articles_by_category[article_data['category']].append(article_data)
 
     # 이메일 본문 (HTML)
     html_body = f"<html><head><meta charset='utf-8'></head><body><h2>{subject}</h2>"
-    for title, summary, url in summaries:
-        # HTML에서 줄바꿈을 위해 \n을 <br>로 변경
-        summary_html = summary.replace('\n', '<br>')
-        html_body += (
-            f"<h3><a href='{url}' target='_blank'>{title}</a></h3>"
-            f"<p>{summary_html}</p>"
-            "<hr>"
-        )
+    
+    # 정의된 카테고리 순서
+    category_order = ["기술 동향", "산업 및 비즈니스", "정책 및 규제", "연구 및 개발", "기타"]
+
+    for category in category_order:
+        if category in articles_by_category:
+            html_body += f"<h3 style='color:#0056b3; border-bottom:2px solid #0056b3; padding-bottom:5px; margin-top:20px;'># {category}</h3>"
+            for article_data in articles_by_category[category]:
+                summary_html = article_data['summary'].replace('\n', '<br>')
+                html_body += (
+                    f"<h4 style='margin-bottom:5px;'><a href=\"{article_data['url']}\" target='_blank' style='text-decoration:none; color:#333;'>{article_data['korean_title']}</a></h4>"
+                    f"<p style='margin-top:5px; padding-left: 15px; border-left: 3px solid #ccc;'>{summary_html}</p>"
+                )
     html_body += "</body></html>"
 
     try:
         with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
             server.starttls()
             server.login(SMTP_USER, SMTP_PASSWORD)
-            
+
             for recipient_email in RECIPIENT_EMAILS:
                 msg = MIMEMultipart('alternative')
                 msg['From'] = formataddr((str(Header(SENDER_NAME, 'utf-8')), SMTP_USER))
                 msg['To'] = recipient_email
                 msg['Subject'] = Header(subject, 'utf-8')
                 msg.attach(MIMEText(html_body, 'html', 'utf-8'))
-                
+
                 server.sendmail(SMTP_USER, recipient_email, msg.as_string())
                 print(f"이메일이 성공적으로 {recipient_email} 주소로 발송되었습니다.")
 
     except Exception as e:
         print(f"이메일 발송 중 오류 발생: {e}")
-        raise # 예외를 다시 발생시켜 상위에서 처리하도록 함
-
+        raise
 
 def main():
     """스크립트의 메인 실행 함수"""
@@ -122,12 +166,13 @@ def main():
         # 1. 뉴스 가져오기
         articles = get_ai_news()
 
-        # 2. 뉴스 요약하기
+        # 2. 뉴스 요약, 번역 및 분류
         summarized_articles = []
         if articles:
             for article in articles:
-                summary = summarize_with_gemini(article)
-                summarized_articles.append((article['title'], summary, article['url']))
+                processed_data = summarize_with_gemini(article)
+                processed_data['url'] = article['url']
+                summarized_articles.append(processed_data)
 
         # 3. 이메일 보내기
         send_email(summarized_articles)
