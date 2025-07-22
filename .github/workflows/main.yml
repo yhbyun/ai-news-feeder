@@ -5,12 +5,12 @@ name: AI News Feeder
 on:
   workflow_dispatch: # 수동으로 실행할 수 있도록 설정
   schedule:
-    - cron: '0 23 * * *' # 매일 23:00 UTC (한국 시간 기준 다음 날 오전 8시)에 실행
+    - cron: '0 22 * * *' # 매일 22:00 UTC (한국 시간 기준 다음 날 오전 7시)에 실행
 
 jobs:
   build-and-send-email:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
