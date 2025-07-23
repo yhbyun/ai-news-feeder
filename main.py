@@ -170,8 +170,8 @@ def send_email(processed_articles, categories):
             summary_html = article_data['summary'].replace('\n', '<br>')
             html_body += (
                 f"<div style='margin-bottom: 15px;'>"
-                f"<h4 style='margin-bottom:5px;'><a href=\"{article_data['url']}\" target='_blank' style='text-decoration:none; color:#333;'>{article_data['korean_title']}</a></h4>"
-                f"<p style='margin-top:5px; padding-left: 15px; border-left: 3px solid #ccc;'>{summary_html}</p>"
+                f"<h4 style='margin-bottom:5px;'><a href=\"{article_data['url']}\" target='_blank' style='color:#333;'>{article_data['korean_title']}</a></h4>"
+                f"<p style='margin-top:5px;'>{summary_html}</p>"
                 f"</div>"
             )
     html_body += "</body></html>"
