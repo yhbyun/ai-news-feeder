@@ -74,16 +74,16 @@ def get_ai_news():
         print(f"뉴스 API 요청 중 오류 발생: {e}")
         raise  # 예외를 다시 발생시켜 상위에서 처리하도록 함
 
-def summarize_with_gemini(article):
-    """Gemini API를 사용하여 뉴스 기사를 한국어로 요약하고, 제목을 번역하며, 카테고리를 분류합니다."""
+def process_article_with_gemini(article):
+    """Gemini API를 사용하여 뉴스 기사를 처리합니다: 제목 번역, 요약, 태그 추출."""
     print(f"'{article['title']}' 뉴스 처리 시작...")
     
     prompt = f"""
     Analyze the following news article and provide a response in JSON format.
-    The JSON object must contain three fields: 'korean_title', 'summary', and 'category'.
+    The JSON object must contain three fields: 'korean_title', 'summary', and 'tags'.
     1.  'korean_title': Translate the original English title into natural Korean.
     2.  'summary': Summarize the article's content in Korean. The summary should be concise and easy for a general audience to understand.
-    3.  'category': Classify the article into one of the following categories in Korean: "기술 동향", "산업 및 비즈니스", "정책 및 규제", "연구 및 개발", "기타".
+    3.  'tags': Extract 2-3 most relevant keywords (tags) from the article in Korean. The tags should be provided as a list of strings.
 
     Original Title: {article.get('title', 'N/A')}
     Article Content: {article.get('description', '') or article.get('content', '')}
@@ -91,25 +91,63 @@ def summarize_with_gemini(article):
     
     try:
         response = model.generate_content(prompt)
-        # Gemini 응답에서 JSON 부분만 추출
         json_text = response.text.strip().replace("```json", "").replace("```", "")
         result = json.loads(json_text)
         print("뉴스 처리 완료.")
+        # URL을 결과에 추가
+        result['url'] = article.get('url')
         return result
     except (Exception, json.JSONDecodeError) as e:
         print(f"Gemini API 호출 또는 JSON 파싱 중 오류 발생: {e}")
-        # 실패 시 기본값 반환
         return {
-            "korean_title": article.get('title', 'N/A'), # 오류 시 원본 제목 사용
+            "korean_title": article.get('title', 'N/A'),
             "summary": "요약 생성에 실패했습니다.",
-            "category": "기타"
+            "tags": [],
+            "url": article.get('url')
         }
 
 
-def send_email(summarized_articles):
+def categorize_articles_with_gemini(articles):
+    """모든 뉴스 정보를 바탕으로 동적 카테고리를 생성하고 뉴스들을 할당합니다."""
+    print("전체 뉴스를 기반으로 동적 카테고리 생성을 시작합니다...")
+    
+    # Gemini에 전달할 뉴스 목록 생성
+    news_list_for_prompt = []
+    for i, article in enumerate(articles):
+        news_list_for_prompt.append(f"{i}: {article['korean_title']} (Tags: {', '.join(article['tags'])})")
+
+    prompt = f"""
+    You are an expert AI news editor. Based on the following list of news articles, please group them into 3-7 relevant categories.
+
+    Follow these rules strictly:
+    1. Distribute the articles as evenly as possible across the categories.
+    2. A single category MUST NOT contain more than 6 articles.
+
+    Provide the response in JSON format. The JSON object should have a single key "categories".
+    The value of "categories" should be a list of objects, where each object represents a category and contains two keys:
+    - 'category_name': The name of the category you created (in Korean).
+    - 'articles': A list of numbers corresponding to the articles that belong to this category.
+
+    News List:
+    {news_list_for_prompt}
+    """
+
+    try:
+        response = model.generate_content(prompt)
+        json_text = response.text.strip().replace("```json", "").replace("```", "")
+        categorization_result = json.loads(json_text)
+        categories = categorization_result.get('categories', [])
+        print(f"동적 카테고리 생성 완료: {[cat['category_name'] for cat in categories]}")
+        return categories
+    except (Exception, json.JSONDecodeError) as e:
+        print(f"카테고리 생성 중 오류 발생: {e}")
+        # 오류 발생 시, 모든 기사를 '주요 뉴스'라는 단일 카테고리로 묶음
+        return [{"category_name": "주요 뉴스", "articles": list(range(len(articles)))}]
+
+def send_email(processed_articles, categories):
     """요약된 뉴스 내용을 카테고리별로 그룹화하여 이메일로 발송합니다."""
-    if not summarized_articles:
-        print("요약된 뉴스가 없어 이메일을 발송하지 않습니다.")
+    if not processed_articles:
+        print("처리된 뉴스가 없어 이메일을 발송하지 않습니다.")
         return
     if not RECIPIENT_EMAILS:
         print("수신자 이메일이 설정되지 않아 이메일을 발송하지 않습니다.")
@@ -119,26 +157,23 @@ def send_email(summarized_articles):
     today_str = datetime.now().strftime('%Y년 %m월 %d일')
     subject = f"📰 오늘의 AI 뉴스 ({today_str})"
 
-    # 카테고리별로 뉴스 그룹화
-    articles_by_category = defaultdict(list)
-    for article_data in summarized_articles:
-        articles_by_category[article_data['category']].append(article_data)
-
     # 이메일 본문 (HTML)
-    html_body = f"<html><head><meta charset='utf-8'></head><body><h2>{subject}</h2>"
+    html_body = f"<html><head><meta charset='utf-8'></head><body style='font-family: sans-serif;'><h2>{subject}</h2>"
     
-    # 정의된 카테고리 순서
-    category_order = ["기술 동향", "산업 및 비즈니스", "정책 및 규제", "연구 및 개발", "기타"]
-
-    for category in category_order:
-        if category in articles_by_category:
-            html_body += f"<h3 style='color:#0056b3; border-bottom:2px solid #0056b3; padding-bottom:5px; margin-top:20px;'># {category}</h3>"
-            for article_data in articles_by_category[category]:
-                summary_html = article_data['summary'].replace('\n', '<br>')
-                html_body += (
-                    f"<h4 style='margin-bottom:5px;'><a href=\"{article_data['url']}\" target='_blank' style='text-decoration:none; color:#333;'>{article_data['korean_title']}</a></h4>"
-                    f"<p style='margin-top:5px; padding-left: 15px; border-left: 3px solid #ccc;'>{summary_html}</p>"
-                )
+    for category_info in categories:
+        category_name = category_info['category_name']
+        article_indices = category_info['articles']
+        
+        html_body += f"<h3 style='color:#0056b3; border-bottom:2px solid #0056b3; padding-bottom:5px; margin-top:20px;'># {category_name}</h3>"
+        for index in article_indices:
+            article_data = processed_articles[index]
+            summary_html = article_data['summary'].replace('\n', '<br>')
+            html_body += (
+                f"<div style='margin-bottom: 15px;'>"
+                f"<h4 style='margin-bottom:5px;'><a href=\"{article_data['url']}\" target='_blank' style='text-decoration:none; color:#333;'>{article_data['korean_title']}</a></h4>"
+                f"<p style='margin-top:5px; padding-left: 15px; border-left: 3px solid #ccc;'>{summary_html}</p>"
+                f"</div>"
+            )
     html_body += "</body></html>"
 
     try:
@@ -166,16 +201,20 @@ def main():
         # 1. 뉴스 가져오기
         articles = get_ai_news()
 
-        # 2. 뉴스 요약, 번역 및 분류
-        summarized_articles = []
+        # 2. 각 뉴스 처리 (요약, 번역, 태그 추출)
+        processed_articles = []
         if articles:
             for article in articles:
-                processed_data = summarize_with_gemini(article)
-                processed_data['url'] = article['url']
-                summarized_articles.append(processed_data)
+                processed_data = process_article_with_gemini(article)
+                processed_articles.append(processed_data)
 
-        # 3. 이메일 보내기
-        send_email(summarized_articles)
+        # 3. 전체 뉴스를 기반으로 카테고리 생성 및 할당
+        if processed_articles:
+            categories = categorize_articles_with_gemini(processed_articles)
+            # 4. 이메일 보내기
+            send_email(processed_articles, categories)
+        else:
+            print("처리할 뉴스가 없습니다.")
 
         print("AI 뉴스 피더 작업이 성공적으로 완료되었습니다.")
 
