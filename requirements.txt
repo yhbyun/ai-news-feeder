@@ -3,3 +3,5 @@ requests
 python-dotenv
 Jinja2
 premailer
+feedparser
+beautifulsoup4
