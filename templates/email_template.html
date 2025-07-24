@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>{{ subject }}</title>
+    <link rel="stylesheet" href="email_style.css">
+</head>
+<body>
+    <div class="container">
+        <h2>{{ subject }}</h2>
+        
+        {% for category_info in categories %}
+        <div class="category-section">
+            <h3># {{ category_info.category_name }}</h3>
+            {% for index in category_info.articles %}
+                {% set article = processed_articles[index] %}
+                <div class="article">
+                    <h4><a href="{{ article.url }}" target="_blank">{{ article.korean_title }}</a></h4>
+                    <p>{{ article.summary | replace('\n', '<br>') }}</p>
+                </div>
+            {% endfor %}
+        </div>
+        {% endfor %}
+
+        <div class="footer">
+            <p>이 메일은 AI News Feeder 프로젝트를 통해 자동 발송되었습니다.</p>
+        </div>
+    </div>
+</body>
+</html>

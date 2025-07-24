@@ -10,6 +10,8 @@ from email.header import Header
 from email.utils import formataddr
 from datetime import datetime, timedelta
 from collections import defaultdict
+from jinja2 import Environment, FileSystemLoader
+from premailer import transform
 
 # --- 로컬 테스트용 .env 파일 로드 ---
 # GitHub Actions 환경에서는 이 부분이 실행되지 않도록 CI 환경 변수 확인
@@ -144,38 +146,39 @@ def categorize_articles_with_gemini(articles):
         # 오류 발생 시, 모든 기사를 '주요 뉴스'라는 단일 카테고리로 묶음
         return [{"category_name": "주요 뉴스", "articles": list(range(len(articles)))}]
 
-def send_email(processed_articles, categories):
-    """요약된 뉴스 내용을 카테고리별로 그룹화하여 이메일로 발송합니다."""
-    if not processed_articles:
-        print("처리된 뉴스가 없어 이메일을 발송하지 않습니다.")
-        return
-    if not RECIPIENT_EMAILS:
-        print("수신자 이메일이 설정되지 않아 이메일을 발송하지 않습니다.")
-        return
-
-    print("이메일 발송을 시작합니다...")
+def generate_email_html(processed_articles, categories):
+    """뉴스 데이터와 카테고리를 기반으로 최종 이메일 HTML을 생성합니다."""
+    print("이메일 HTML 생성을 시작합니다...")
     today_str = datetime.now().strftime('%Y년 %m월 %d일')
     subject = f"📰 오늘의 AI 뉴스 ({today_str})"
 
-    # 이메일 본문 (HTML)
-    html_body = f"<html><head><meta charset='utf-8'></head><body style='font-family: sans-serif;'><h2>{subject}</h2>"
-    
-    for category_info in categories:
-        category_name = category_info['category_name']
-        article_indices = category_info['articles']
-        
-        html_body += f"<h3 style='color:#0056b3; border-bottom:2px solid #0056b3; padding-bottom:5px; margin-top:20px;'># {category_name}</h3>"
-        for index in article_indices:
-            article_data = processed_articles[index]
-            summary_html = article_data['summary'].replace('\n', '<br>')
-            html_body += (
-                f"<div style='margin-bottom: 15px;'>"
-                f"<h4 style='margin-bottom:5px;'><a href=\"{article_data['url']}\" target='_blank' style='color:#333;'>{article_data['korean_title']}</a></h4>"
-                f"<p style='margin-top:5px;'>{summary_html}</p>"
-                f"</div>"
-            )
-    html_body += "</body></html>"
+    # Jinja2 템플릿 설정
+    template_dir = os.path.join(os.path.dirname(__file__), 'templates')
+    env = Environment(loader=FileSystemLoader(template_dir))
+    template = env.get_template('email_template.html')
 
+    # 템플릿에 전달할 데이터
+    template_data = {
+        "subject": subject,
+        "categories": categories,
+        "processed_articles": processed_articles
+    }
+    
+    # HTML 렌더링
+    html_content = template.render(template_data)
+
+    # CSS 인라이닝
+    final_html = transform(html_content, base_path=template_dir, allow_loading_external_files=True)
+    print("이메일 HTML 생성 완료.")
+    return final_html, subject
+
+def send_email_to_recipients(html_content, subject):
+    """생성된 HTML을 모든 수신자에게 이메일로 발송합니다."""
+    if not RECIPIENT_EMAILS:
+        print("수신자 이메일이 설정되지 않아 이메일을 발송하지 않습니다.")
+        return
+        
+    print("이메일 발송을 시작합니다...")
     try:
         with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
             server.starttls()
@@ -186,7 +189,7 @@ def send_email(processed_articles, categories):
                 msg['From'] = formataddr((str(Header(SENDER_NAME, 'utf-8')), SMTP_USER))
                 msg['To'] = recipient_email
                 msg['Subject'] = Header(subject, 'utf-8')
-                msg.attach(MIMEText(html_body, 'html', 'utf-8'))
+                msg.attach(MIMEText(html_content, 'html', 'utf-8'))
 
                 server.sendmail(SMTP_USER, recipient_email, msg.as_string())
                 print(f"이메일이 성공적으로 {recipient_email} 주소로 발송되었습니다.")
@@ -195,8 +198,37 @@ def send_email(processed_articles, categories):
         print(f"이메일 발송 중 오류 발생: {e}")
         raise
 
+def generate_mock_data():
+    """미리보기용 샘플 데이터를 생성합니다."""
+    print("미리보기용 샘플 데이터를 생성합니다...")
+    processed_articles = [
+        {'korean_title': '샘플 뉴스 1: AI의 미래', 'summary': '이것은 첫 번째 샘플 뉴스의 요약입니다.', 'tags': ['AI', '미래 기술'], 'url': '#'},
+        {'korean_title': '샘플 뉴스 2: 머신러닝의 발전', 'summary': '두 번째 샘플 뉴스는 머신러닝에 대한 내용입니다.', 'tags': ['머신러닝', '기술 동향'], 'url': '#'},
+        {'korean_title': '샘플 뉴스 3: 새로운 AI 모델 출시', 'summary': '세 번째 샘플 뉴스는 새로운 모델 출시에 대한 소식입니다.', 'tags': ['신제품', 'AI 모델'], 'url': '#'},
+        {'korean_title': '샘플 뉴스 4: AI와 윤리', 'summary': '네 번째 샘플 뉴스는 AI의 윤리적 문제에 대해 다룹니다.', 'tags': ['AI 윤리', '정책'], 'url': '#'},
+        {'korean_title': '샘플 뉴스 5: 데이터 과학의 중요성', 'summary': '다섯 번째 샘플 뉴스는 데이터 과학의 중요성을 강조합니다.', 'tags': ['데이터 과학', '분석'], 'url': '#'},
+    ]
+    categories = [
+        {'category_name': '기술 및 미래', 'articles': [0, 1]},
+        {'category_name': '제품 및 정책', 'articles': [2, 3]},
+        {'category_name': '기타', 'articles': [4]}
+    ]
+    return processed_articles, categories
+
 def main():
     """스크립트의 메인 실행 함수"""
+    # 미리보기 모드 확인
+    if '--preview' in sys.argv:
+        processed_articles, categories = generate_mock_data()
+        html_content, _ = generate_email_html(processed_articles, categories)
+        
+        preview_file = "email_preview.html"
+        with open(preview_file, "w", encoding="utf-8") as f:
+            f.write(html_content)
+        print(f"이메일 미리보기가 '{preview_file}' 파일로 저장되었습니다.")
+        return
+
+    # 일반 실행 모드
     try:
         # 1. 뉴스 가져오기
         articles = get_ai_news()
@@ -211,8 +243,9 @@ def main():
         # 3. 전체 뉴스를 기반으로 카테고리 생성 및 할당
         if processed_articles:
             categories = categorize_articles_with_gemini(processed_articles)
-            # 4. 이메일 보내기
-            send_email(processed_articles, categories)
+            # 4. 이메일 HTML 생성 및 발송
+            html_content, subject = generate_email_html(processed_articles, categories)
+            send_email_to_recipients(html_content, subject)
         else:
             print("처리할 뉴스가 없습니다.")
 
