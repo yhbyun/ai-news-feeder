@@ -40,7 +40,7 @@ def get_ai_news():
     """News API를 통해 AI 관련 최신 뉴스를 가져옵니다."""
     print("AI 뉴스 수집을 시작합니다...")
     yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
-    
+
     # 최신 트렌드를 반영한 검색 키워드
     keywords = [
         '"Artificial Intelligence"', '"Machine Learning"', 'LLM',
@@ -60,7 +60,7 @@ def get_ai_news():
         "language=en&"
         f"apiKey={NEWS_API_KEY}"
     )
-    
+
     print(f"뉴스 검색어: {query}")
 
     try:
@@ -68,6 +68,12 @@ def get_ai_news():
         response.raise_for_status()  # HTTP 오류가 발생하면 예외를 발생시킵니다.
         articles = response.json().get("articles", [])
         print(f"총 {len(articles)}개의 뉴스를 발견했습니다.")
+
+        # 출처 정보 추가 (News API의 source 객체는 id와 name만 포함)
+        for article in articles:
+            source = article.get('source', {})
+            article['source_name'] = source.get('name', 'Unknown')
+            article['source_id'] = source.get('id', '')
 
         # 설정된 개수만큼 뉴스 반환
         print(f"상위 {ARTICLE_COUNT}개의 뉴스만 처리합니다.")
@@ -79,7 +85,7 @@ def get_ai_news():
 def process_article_with_gemini(article):
     """Gemini API를 사용하여 뉴스 기사를 처리합니다: 제목 번역, 요약, 태그 추출."""
     print(f"'{article['title']}' 뉴스 처리 시작...")
-    
+
     prompt = f"""
     Analyze the following news article and provide a response in JSON format.
     The JSON object must contain three fields: 'korean_title', 'summary', and 'tags'.
@@ -90,14 +96,16 @@ def process_article_with_gemini(article):
     Original Title: {article.get('title', 'N/A')}
     Article Content: {article.get('description', '') or article.get('content', '')}
     """
-    
+
     try:
         response = model.generate_content(prompt)
         json_text = response.text.strip().replace("```json", "").replace("```", "")
         result = json.loads(json_text)
         print("뉴스 처리 완료.")
-        # URL을 결과에 추가
+        # URL과 출처 정보를 결과에 추가
         result['url'] = article.get('url')
+        result['source_name'] = article.get('source_name', 'Unknown')
+        result['source_id'] = article.get('source_id', '')
         return result
     except (Exception, json.JSONDecodeError) as e:
         print(f"Gemini API 호출 또는 JSON 파싱 중 오류 발생: {e}")
@@ -105,14 +113,16 @@ def process_article_with_gemini(article):
             "korean_title": article.get('title', 'N/A'),
             "summary": "요약 생성에 실패했습니다.",
             "tags": [],
-            "url": article.get('url')
+            "url": article.get('url'),
+            "source_name": article.get('source_name', 'Unknown'),
+            "source_id": article.get('source_id', '')
         }
 
 
 def categorize_articles_with_gemini(articles):
     """모든 뉴스 정보를 바탕으로 동적 카테고리를 생성하고 뉴스들을 할당합니다."""
     print("전체 뉴스를 기반으로 동적 카테고리 생성을 시작합니다...")
-    
+
     # Gemini에 전달할 뉴스 목록 생성
     news_list_for_prompt = []
     for i, article in enumerate(articles):
@@ -163,7 +173,7 @@ def generate_email_html(processed_articles, categories):
         "categories": categories,
         "processed_articles": processed_articles
     }
-    
+
     # HTML 렌더링
     html_content = template.render(template_data)
 
@@ -177,7 +187,7 @@ def send_email_to_recipients(html_content, subject):
     if not RECIPIENT_EMAILS:
         print("수신자 이메일이 설정되지 않아 이메일을 발송하지 않습니다.")
         return
-        
+
     print("이메일 발송을 시작합니다...")
     try:
         with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
@@ -202,11 +212,11 @@ def generate_mock_data():
     """미리보기용 샘플 데이터를 생성합니다."""
     print("미리보기용 샘플 데이터를 생성합니다...")
     processed_articles = [
-        {'korean_title': '샘플 뉴스 1: AI의 미래', 'summary': '이것은 첫 번째 샘플 뉴스의 요약입니다.', 'tags': ['AI', '미래 기술'], 'url': '#'},
-        {'korean_title': '샘플 뉴스 2: 머신러닝의 발전', 'summary': '두 번째 샘플 뉴스는 머신러닝에 대한 내용입니다.', 'tags': ['머신러닝', '기술 동향'], 'url': '#'},
-        {'korean_title': '샘플 뉴스 3: 새로운 AI 모델 출시', 'summary': '세 번째 샘플 뉴스는 새로운 모델 출시에 대한 소식입니다.', 'tags': ['신제품', 'AI 모델'], 'url': '#'},
-        {'korean_title': '샘플 뉴스 4: AI와 윤리', 'summary': '네 번째 샘플 뉴스는 AI의 윤리적 문제에 대해 다룹니다.', 'tags': ['AI 윤리', '정책'], 'url': '#'},
-        {'korean_title': '샘플 뉴스 5: 데이터 과학의 중요성', 'summary': '다섯 번째 샘플 뉴스는 데이터 과학의 중요성을 강조합니다.', 'tags': ['데이터 과학', '분석'], 'url': '#'},
+        {'korean_title': '샘플 뉴스 1: AI의 미래', 'summary': '이것은 첫 번째 샘플 뉴스의 요약입니다.', 'tags': ['AI', '미래 기술'], 'url': '#', 'source_name': 'TechCrunch', 'source_id': 'techcrunch'},
+        {'korean_title': '샘플 뉴스 2: 머신러닝의 발전', 'summary': '두 번째 샘플 뉴스는 머신러닝에 대한 내용입니다.', 'tags': ['머신러닝', '기술 동향'], 'url': '#', 'source_name': 'VentureBeat', 'source_id': 'venturebeat'},
+        {'korean_title': '샘플 뉴스 3: 새로운 AI 모델 출시', 'summary': '세 번째 샘플 뉴스는 새로운 모델 출시에 대한 소식입니다.', 'tags': ['신제품', 'AI 모델'], 'url': '#', 'source_name': 'Reuters', 'source_id': 'reuters'},
+        {'korean_title': '샘플 뉴스 4: AI와 윤리', 'summary': '네 번째 샘플 뉴스는 AI의 윤리적 문제에 대해 다룹니다.', 'tags': ['AI 윤리', '정책'], 'url': '#', 'source_name': 'MIT Technology Review', 'source_id': 'mit'},
+        {'korean_title': '샘플 뉴스 5: 데이터 과학의 중요성', 'summary': '다섯 번째 샘플 뉴스는 데이터 과학의 중요성을 강조합니다.', 'tags': ['데이터 과학', '분석'], 'url': '#', 'source_name': 'Wired', 'source_id': 'wired'},
     ]
     categories = [
         {'category_name': '기술 및 미래', 'articles': [0, 1]},
@@ -221,7 +231,7 @@ def main():
     if '--preview' in sys.argv:
         processed_articles, categories = generate_mock_data()
         html_content, _ = generate_email_html(processed_articles, categories)
-        
+
         preview_file = "email_preview.html"
         with open(preview_file, "w", encoding="utf-8") as f:
             f.write(html_content)

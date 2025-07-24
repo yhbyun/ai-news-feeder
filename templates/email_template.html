@@ -26,6 +26,10 @@
                             <h4><a href="{{ article.url }}" target="_blank">{{ article.korean_title }}</a></h4>
                             <p>{{ article.summary | replace('\n', '<br>') }}</p>
 
+                            <div class="article-meta">
+                                <span class="source">{{ article.source_name }}</span>
+                            </div>
+
                             {% if article.tags %}
                             <div class="tags">
                                 {% for tag in article.tags %}
