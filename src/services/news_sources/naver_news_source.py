@@ -36,7 +36,7 @@ class NaverNewsSource(NewsSource):
         ]
 
     def get_source_name(self) -> str:
-        return f"네이버 뉴스 ({self.category})"
+        return f"네이버 뉴스"
 
     def fetch_news(self, keywords: List[str], date_from: str) -> List[Article]:
         """네이버 뉴스에서 AI 관련 뉴스를 가져옵니다."""
