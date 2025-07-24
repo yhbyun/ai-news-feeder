@@ -150,7 +150,7 @@ def generate_email_html(processed_articles, categories):
     """뉴스 데이터와 카테고리를 기반으로 최종 이메일 HTML을 생성합니다."""
     print("이메일 HTML 생성을 시작합니다...")
     today_str = datetime.now().strftime('%Y년 %m월 %d일')
-    subject = f"📰 오늘의 AI 뉴스 ({today_str})"
+    subject = f"🤖 오늘의 AI 뉴스 ({today_str})"
 
     # Jinja2 템플릿 설정
     template_dir = os.path.join(os.path.dirname(__file__), 'templates')
