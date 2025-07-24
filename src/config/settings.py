@@ -69,7 +69,7 @@ class Settings:
                     name="naver_it",
                     type="naver",
                     enabled=True,
-                    weight=1.0,
+                    weight=1.4,
                     config={"category": "it"}
                 ),
                 NewsSourceConfig(
