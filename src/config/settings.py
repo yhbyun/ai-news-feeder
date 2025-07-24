@@ -11,7 +11,7 @@ if 'CI' not in os.environ:
 class NewsSourceConfig:
     """뉴스 소스 설정"""
     name: str
-    type: str  # 'api', 'rss'
+    type: str  # 'api', 'rss', 'naver'
     enabled: bool
     weight: float
     config: Dict[str, Any]
@@ -63,6 +63,21 @@ class Settings:
                     enabled=False,
                     weight=0.8,
                     config={"url": "https://venturebeat.com/feed/"}
+                ),
+                # 네이버 뉴스 소스들
+                NewsSourceConfig(
+                    name="naver_it",
+                    type="naver",
+                    enabled=True,
+                    weight=1.0,
+                    config={"category": "it"}
+                ),
+                NewsSourceConfig(
+                    name="naver_economy",
+                    type="naver",
+                    enabled=False,
+                    weight=0.8,
+                    config={"category": "economy"}
                 ),
                 # 새로운 RSS 소스 추가 예제
                 # NewsSourceConfig(
@@ -144,5 +159,16 @@ class Settings:
             enabled=enabled,
             weight=weight,
             config={"api_key": api_key}
+        )
+        self.news_sources.append(new_source)
+
+    def add_naver_source(self, name: str, category: str, weight: float = 1.0, enabled: bool = True) -> None:
+        """새로운 네이버 뉴스 소스를 추가합니다."""
+        new_source = NewsSourceConfig(
+            name=name,
+            type="naver",
+            enabled=enabled,
+            weight=weight,
+            config={"category": category}
         )
         self.news_sources.append(new_source)

@@ -1,5 +1,5 @@
 import feedparser
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List
 from .base import NewsSource
 from ...models.article import Article
@@ -60,9 +60,14 @@ class RSSSource(NewsSource):
         published_at = None
         if hasattr(entry, 'published_parsed') and entry.published_parsed:
             try:
-                published_at = datetime(*entry.published_parsed[:6])
+                # timezone-naive datetime 생성 후 UTC로 설정
+                published_at = datetime(*entry.published_parsed[:6], tzinfo=timezone.utc)
             except (ValueError, TypeError):
-                pass
+                # 파싱 실패 시 현재 시간 사용
+                published_at = datetime.now(timezone.utc)
+        else:
+            # published_parsed가 없으면 현재 시간 사용
+            published_at = datetime.now(timezone.utc)
 
         return Article(
             title=entry.title,

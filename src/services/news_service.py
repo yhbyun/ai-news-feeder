@@ -3,6 +3,7 @@ from ..models.article import Article
 from ..config.settings import Settings
 from ..services.news_sources.news_api_source import NewsAPISource
 from ..services.news_sources.rss_source import RSSSource
+from ..services.news_sources.naver_news_source import NaverNewsSource
 from ..services.news_aggregator import NewsAggregator
 from ..utils.logger import get_logger
 from ..utils.exceptions import NewsFetchError
@@ -37,6 +38,14 @@ class NewsService:
                 source = RSSSource(
                     name=source_config.name,
                     url=source_config.config["url"],
+                    weight=source_config.weight
+                )
+                sources.append(source)
+
+            elif source_config.type == "naver":
+                source = NaverNewsSource(
+                    name=source_config.name,
+                    category=source_config.config["category"],
                     weight=source_config.weight
                 )
                 sources.append(source)

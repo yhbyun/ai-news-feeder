@@ -1,5 +1,5 @@
 import requests
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List
 from .base import NewsSource
 from ...models.article import Article
@@ -66,9 +66,14 @@ class NewsAPISource(NewsSource):
         published_at = None
         if article_data.get('publishedAt'):
             try:
+                # ISO 형식 문자열을 UTC datetime으로 파싱
                 published_at = datetime.fromisoformat(article_data['publishedAt'].replace('Z', '+00:00'))
             except ValueError:
-                pass
+                # 파싱 실패 시 현재 시간 사용
+                published_at = datetime.now(timezone.utc)
+        else:
+            # publishedAt이 없으면 현재 시간 사용
+            published_at = datetime.now(timezone.utc)
 
         return Article(
             title=article_data.get('title', ''),

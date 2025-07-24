@@ -1,5 +1,5 @@
 from typing import List, Dict, Any
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from ..models.article import Article
 from ..services.news_sources.base import NewsSource
 from ..utils.logger import get_logger
@@ -81,6 +81,8 @@ class NewsAggregator:
 
     def _calculate_quality_scores(self, articles: List[Article]) -> List[Article]:
         """뉴스 품질 점수 계산"""
+        now = datetime.now(timezone.utc)  # UTC 시간으로 통일
+
         for article in articles:
             score = 0
 
@@ -91,7 +93,8 @@ class NewsAggregator:
                 'venturebeat': 1.0,
                 'wired': 0.9,
                 'mit technology review': 1.1,
-                'news api': 1.0
+                'news api': 1.0,
+                '네이버 뉴스': 1.1,  # 네이버 뉴스 가중치 추가
             }
 
             source_name = article.source_name.lower()
@@ -109,13 +112,24 @@ class NewsAggregator:
 
             # 최신성 점수
             if article.published_at:
-                days_old = (datetime.now() - article.published_at).days
-                if days_old <= 1:
-                    score += 0.5
-                elif days_old <= 3:
-                    score += 0.3
-                elif days_old <= 7:
-                    score += 0.1
+                try:
+                    # timezone-naive datetime을 UTC로 변환
+                    if article.published_at.tzinfo is None:
+                        published_at_utc = article.published_at.replace(tzinfo=timezone.utc)
+                    else:
+                        published_at_utc = article.published_at.astimezone(timezone.utc)
+
+                    days_old = (now - published_at_utc).days
+                    if days_old <= 1:
+                        score += 0.5
+                    elif days_old <= 3:
+                        score += 0.3
+                    elif days_old <= 7:
+                        score += 0.1
+                except Exception as e:
+                    logger.warning(f"날짜 계산 중 오류: {e}")
+                    # 날짜 계산 실패 시 기본 점수만 부여
+                    pass
 
             article.quality_score = score
 
