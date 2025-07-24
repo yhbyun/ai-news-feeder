@@ -87,18 +87,7 @@ class NewsAggregator:
             score = 0
 
             # 출처별 가중치
-            source_weights = {
-                'reuters': 1.2,
-                'techcrunch': 1.1,
-                'venturebeat': 1.0,
-                'wired': 0.9,
-                'mit technology review': 1.1,
-                'news api': 1.0,
-                '네이버 뉴스': 1.1,  # 네이버 뉴스 가중치 추가
-            }
-
-            source_name = article.source_name.lower()
-            score += source_weights.get(source_name, 0.8)
+            score += article.weight
 
             # 제목 길이 점수
             title_length = len(article.title)
