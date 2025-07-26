@@ -1,4 +1,5 @@
 import sys
+import time
 from src.config.settings import Settings
 from src.services.news_service import NewsService
 from src.services.ai_service import AIService
@@ -116,6 +117,9 @@ def main():
             try:
                 processed_article = ai_service.process_article(article)
                 processed_articles.append(processed_article)
+
+                # API 속도 제한을 피하기 위해 각 호출 사이에 지연 시간 추가
+                time.sleep(10)
             except AIProcessingError as e:
                 logger.error(f"뉴스 처리 중 오류: {e}")
                 # 오류가 발생해도 계속 진행
