@@ -13,12 +13,16 @@ class NewsAggregator:
     def __init__(self, sources: List[NewsSource]):
         self.sources = sources
         self.keywords = [
-            '"Artificial Intelligence"', '"Machine Learning"', 'LLM',
-            'OpenAI', 'ChatGPT', 'Sora',
-            'Google', 'Gemini',
-            'Anthropic', 'Claude',
-            'Meta', 'Llama',
-            'Perplexity', 'Cursor', 'Midjourney'
+            'Artificial Intelligence', 'Machine Learning', 'Deep Learning', 'Neural Networks',
+            'Generative AI', 'GAI', 'Computer Vision', 'Natural Language Processing', 'NLP',
+            'foundation model', 'AI model', 'AI research', 'AI development',
+            'Reinforcement Learning', 'Robotics', 'Autonomous Systems',
+            'Chatbots', 'Large Language Models', 'LLM',
+            'AI Ethics', 'AI Regulation',
+            'AI in Healthcare', 'AI Startup', 'AI Governance', 'Quantum AI',
+            'AI company', 'AI investment', 'AI market', 'AI industry', 'AI product', 'AI strategy', 'AI in business',
+            'ChatGPT', 'GPT', 'OpenAI', 'Google DeepMind', 'TensorFlow', 'PyTorch', 'Midjourney', 'Stable Diffusion',
+            'Gemini', 'Anthropic', 'Claude',
         ]
 
     def aggregate_news(self, max_articles: int = 10) -> List[Article]:
