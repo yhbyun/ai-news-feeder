@@ -82,6 +82,21 @@ class AIService:
             categorization_result = json.loads(json_text)
             categories = categorization_result.get('categories', [])
 
+            # AI가 반환한 인덱스가 리스트(예: [0]) 또는 문자열(예: "0")일 수 있으므로, 정수로 변환합니다.
+            for category in categories:
+                if 'articles' in category and isinstance(category['articles'], list):
+                    try:
+                        cleaned_indices = []
+                        for item in category['articles']:
+                            if isinstance(item, list) and item:
+                                cleaned_indices.append(int(item[0]))
+                            else:
+                                cleaned_indices.append(int(item))
+                        category['articles'] = cleaned_indices
+                    except (ValueError, TypeError, IndexError):
+                        logger.warning(f"카테고리 '{category.get('category_name')}'에서 유효하지 않은 기사 인덱스를 발견하여 비웁니다.")
+                        category['articles'] = []
+
             category_names = [cat['category_name'] for cat in categories]
             logger.info(f"동적 카테고리 생성 완료: {category_names}")
             return categories
