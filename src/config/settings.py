@@ -79,6 +79,20 @@ class Settings:
                     weight=0.8,
                     config={"category": "economy"}
                 ),
+                NewsSourceConfig(
+                    name="MIT Technology Review",
+                    type="rss",
+                    enabled=True,
+                    weight=1.4,
+                    config={"url": "https://www.technologyreview.com/feed/"}
+                ),
+                NewsSourceConfig(
+                    name="Google AI Blog",
+                    type="rss",
+                    enabled=True,
+                    weight=1.4,
+                    config={"url": "https://blog.google/technology/ai/rss/"}
+                ),
                 # 새로운 RSS 소스 추가 예제
                 # NewsSourceConfig(
                 #     name="your_rss_source",
