@@ -16,6 +16,12 @@ class NewsAPISource(NewsSource):
         self.api_key = api_key
         self.base_url = "https://newsapi.org/v2/everything"
 
+        self.ai_keywords = [
+            '"artificial intelligence"',  '"machine learning"', '"deep learning"',
+            'ChatGPT', 'OpenAI', 'Gemini', 'Chatbots', 'LLM',
+            'Llama', 'Anthropic', 'Claude', 'robotics', '"Quantum AI"',
+        ];
+
     def get_source_name(self) -> str:
         return self.name
 
@@ -23,7 +29,7 @@ class NewsAPISource(NewsSource):
         """News API를 통해 AI 관련 최신 뉴스를 가져옵니다."""
         logger.info(f"{self.name}에서 뉴스 수집을 시작합니다...")
 
-        query = " OR ".join(keywords)
+        query = " OR ".join(self.ai_keywords)
 
         params = {
             'q': f"({query})",
