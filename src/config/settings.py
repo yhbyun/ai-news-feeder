@@ -25,10 +25,19 @@ class Settings:
     gemini_api_key: str
 
     # Email Settings
+    email_sender_type: str  # 'smtp' or 'ncloud'
+    
+    # SMTP Settings
     smtp_host: str
     smtp_port: int
     smtp_user: str
     smtp_password: str
+
+    # Naver Cloud Outbound Mailer Settings
+    ncloud_access_key: str
+    ncloud_secret_key: str
+    ncloud_sender_address: str
+
     recipient_emails: List[str]
     sender_name: str
 
@@ -109,10 +118,18 @@ class Settings:
         return cls(
             news_api_key=os.getenv("NEWS_API_KEY", ""),
             gemini_api_key=os.getenv("GEMINI_API_KEY", ""),
+            
+            email_sender_type=os.getenv("EMAIL_SENDER_TYPE", "smtp"),
+
             smtp_host=os.getenv("SMTP_HOST", ""),
             smtp_port=int(os.getenv("SMTP_PORT", "587")),
             smtp_user=os.getenv("SMTP_USER", ""),
             smtp_password=os.getenv("SMTP_PASSWORD", ""),
+
+            ncloud_access_key=os.getenv("NCLOUD_ACCESS_KEY", ""),
+            ncloud_secret_key=os.getenv("NCLOUD_SECRET_KEY", ""),
+            ncloud_sender_address=os.getenv("NCLOUD_SENDER_ADDRESS", ""),
+
             recipient_emails=[email.strip() for email in os.getenv("RECIPIENT_EMAIL", "").split(',') if email.strip()],
             sender_name=os.getenv("SENDER_NAME", "AI 뉴스 알리미"),
             article_count=int(os.getenv("NEWS_ARTICLE_COUNT", "5"))
@@ -120,15 +137,17 @@ class Settings:
 
     def validate(self) -> bool:
         """필수 설정값들이 올바르게 설정되었는지 검증합니다."""
-        required_fields = [
-            self.news_api_key,
-            self.gemini_api_key,
-            self.smtp_host,
-            self.smtp_user,
-            self.smtp_password
-        ]
+        if not self.news_api_key or not self.gemini_api_key:
+            return False
 
-        if not all(required_fields):
+        if self.email_sender_type == 'smtp':
+            if not all([self.smtp_host, self.smtp_user, self.smtp_password]):
+                return False
+        elif self.email_sender_type == 'ncloud':
+            if not all([self.ncloud_access_key, self.ncloud_secret_key, self.ncloud_sender_address]):
+                return False
+        else:
+            # 지원하지 않는 이메일 발송 타입
             return False
 
         if not self.recipient_emails:

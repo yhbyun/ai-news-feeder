@@ -33,6 +33,10 @@ jobs:
           SMTP_PORT: ${{ secrets.SMTP_PORT }}
           SMTP_USER: ${{ secrets.SMTP_USER }}
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          NCLOUD_ACCESS_KEY: ${{ secrets.NCLOUD_ACCESS_KEY }}
+          NCLOUD_SECRET_KEY: ${{ secrets.NCLOUD_SECRET_KEY }}
+          NCLOUD_SENDER_ADDRESS: ${{ secrets.NCLOUD_SENDER_ADDRESS }}
+          EMAIL_SENDER_TYPE: ${{ vars.EMAIL_SENDER_TYPE }}
           RECIPIENT_EMAIL: ${{ vars.RECIPIENT_EMAIL }}
           SENDER_NAME: ${{ vars.SENDER_NAME }}
           NEWS_ARTICLE_COUNT: ${{ vars.NEWS_ARTICLE_COUNT }}
