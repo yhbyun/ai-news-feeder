@@ -204,11 +204,13 @@ for source in settings.news_sources:
 | `SMTP_PORT` | SMTP 포트 번호 | `587` |
 | `SMTP_USER` | 발송 이메일 주소 | `your-email@gmail.com` |
 | `SMTP_PASSWORD` | 앱 비밀번호 | `abcd efgh ijkl mnop` |
+| `MS_TEAMS_WEBHOOK_URL` | MS Teams Incoming Webhook URL | `https://outlook.office.com/webhook/...` |
 
 **Variables (설정)**
 | Variable 이름 | 설명 | 예시 값 | 기본값 |
 |--------------|------|---------|--------|
-| `RECIPIENT_EMAIL` | 수신 이메일 주소 (쉼표로 여러개) | `a@a.com,b@b.com` | 없음 |
+| `EMAIL_SENDER_TYPE` | 이메일 발송 방식 ('smtp' 또는 'ncloud') | `smtp` | `smtp` |
+| `RECIPIENTS` | 수신자 이메일 주소 (JSON 배열) | `[{"email": "a@a.com"}, {"email": "b@b.com", "template": "minimal.html"}]` | 없음 |
 | `SENDER_NAME` | 발신자 이름 | `AI News` | "AI 뉴스 알리미" |
 | `NEWS_ARTICLE_COUNT` | 요약할 뉴스 개수 | `5` | `5` |
 
