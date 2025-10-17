@@ -210,6 +210,7 @@ for source in settings.news_sources:
 | Variable 이름 | 설명 | 예시 값 | 기본값 |
 |--------------|------|---------|--------|
 | `EMAIL_SENDER_TYPE` | 이메일 발송 방식 ('smtp' 또는 'ncloud') | `smtp` | `smtp` |
+| `DEFAULT_EMAIL_TEMPLATE` | 기본 이메일 템플릿 파일명 | `email_template.html` | `email_template.html` |
 | `RECIPIENTS` | 수신자 이메일 주소 (JSON 배열) | `[{"email": "a@a.com"}, {"email": "b@b.com", "template": "minimal.html"}]` | 없음 |
 | `SENDER_NAME` | 발신자 이름 | `AI News` | "AI 뉴스 알리미" |
 | `NEWS_ARTICLE_COUNT` | 요약할 뉴스 개수 | `5` | `5` |
