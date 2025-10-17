@@ -102,15 +102,13 @@ class TeamsService:
                         "isSubtle": True
                     })
 
-                items.extend([
-                    {
-                        "type": "TextBlock",
-                        "text": f"_{article.source_name}_",
-                        "size": "Small",
-                        "isSubtle": True,
-                        "spacing": "Small"
-                    }
-                ])
+                items.append({
+                    "type": "TextBlock",
+                    "text": f"_{article.source_name}_",
+                    "size": "Small",
+                    "isSubtle": True,
+                    "spacing": "Small"
+                })
 
                 article_block = {
                     "type": "Container",
