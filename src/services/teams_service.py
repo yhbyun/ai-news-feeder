@@ -31,7 +31,7 @@ class TeamsService:
                     "content": adaptive_card
                 }]
             }
-            
+
             response = requests.post(self.webhook_url, json=payload)
             response.raise_for_status() # 2xx 응답이 아니면 예외 발생
 
@@ -74,39 +74,49 @@ class TeamsService:
 
             for index in category_info['articles']:
                 article = articles[index]
-                article_block = {
-                    "type": "Container",
-                    "items": [
-                        {
-                            "type": "TextBlock",
-                            "text": f"[{article.korean_title}]({article.url})",
-                            "weight": "Bolder",
-                            "wrap": True
-                        },
-                        {
-                            "type": "TextBlock",
-                            "text": article.summary,
-                            "wrap": True,
-                            "spacing": "Small"
-                        },
-                        {
-                            "type": "TextBlock",
-                            "text": f"_{article.source_name}_",
-                            "size": "Small",
-                            "isSubtle": True,
-                            "spacing": "Small"
-                        }
-                    ]
-                }
+
+                # Adaptive Card의 각 기사 항목을 동적으로 구성
+                items = [
+                    {
+                        "type": "TextBlock",
+                        "text": f"[{article.korean_title}]({article.url})",
+                        "weight": "Bolder",
+                        "wrap": True
+                    },
+                    {
+                        "type": "TextBlock",
+                        "text": article.summary,
+                        "wrap": True,
+                        "spacing": "Small"
+                    }
+                ]
+
                 if article.tags:
-                    tags_text = " ".join([f"`{tag}`" for tag in article.tags])
-                    article_block["items"].append({
+                    tags_text = ", ".join([f"`{tag}`" for tag in article.tags])
+                    items.append({
                         "type": "TextBlock",
                         "text": tags_text,
                         "wrap": True,
-                        "size": "Small"
+                        "size": "Small",
+                        "spacing": "Small",
+                        "isSubtle": True
                     })
-                
+
+                items.extend([
+                    {
+                        "type": "TextBlock",
+                        "text": f"_{article.source_name}_",
+                        "size": "Small",
+                        "isSubtle": True,
+                        "spacing": "Small"
+                    }
+                ])
+
+                article_block = {
+                    "type": "Container",
+                    "items": items
+                }
+
                 card["body"].append(article_block)
 
         return card
