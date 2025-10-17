@@ -66,9 +66,11 @@ class TeamsService:
         for category_info in categories:
             card["body"].append({
                 "type": "TextBlock",
-                "text": category_info['category_name'],
+                "text": f"📌 {category_info['category_name']}",
                 "size": "Medium",
                 "weight": "Bolder",
+                "color": "Good",
+                "spacing": "Medium",
                 "separator": True
             })
 
