@@ -38,6 +38,7 @@ jobs:
           NCLOUD_SENDER_ADDRESS: ${{ secrets.NCLOUD_SENDER_ADDRESS }}
           MS_TEAMS_WEBHOOK_URL: ${{ secrets.MS_TEAMS_WEBHOOK_URL }}
           EMAIL_SENDER_TYPE: ${{ vars.EMAIL_SENDER_TYPE }}
+          DEFAULT_EMAIL_TEMPLATE: ${{ vars.DEFAULT_EMAIL_TEMPLATE }}
           RECIPIENTS: ${{ vars.RECIPIENTS }}
           SENDER_NAME: ${{ vars.SENDER_NAME }}
           NEWS_ARTICLE_COUNT: ${{ vars.NEWS_ARTICLE_COUNT }}
