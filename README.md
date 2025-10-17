@@ -26,30 +26,83 @@ pip install -r requirements.txt
 
 ### 2. 환경 변수 설정
 
-`.env` 파일을 생성하고 다음 내용을 추가하세요:
+`.env` 파일을 생성하고 필요한 변수들을 설정하세요. `.env.example` 파일을 참고할 수 있습니다.
 
+#### 필수 API 키
 ```env
 # API Keys
 NEWS_API_KEY=your_news_api_key
 GEMINI_API_KEY=your_gemini_api_key
+```
 
-# Email Settings
+#### 알림 방식 선택 (CLI 옵션으로 대체됨)
+- 실행 시 `--notify email` 또는 `--notify teams` 옵션으로 알림 방식을 선택합니다. (기본값: `email`)
+
+#### Teams 알림 설정 (`--notify teams` 사용 시)
+```env
+# MS Teams Incoming Webhook URL (기본 방식)
+MS_TEAMS_WEBHOOK_URL=your_teams_webhook_url
+```
+
+#### 이메일 알림 설정 (`--notify email` 사용 시)
+```env
+# 이메일 발송 방식 선택: 'smtp' 또는 'ncloud'
+EMAIL_SENDER_TYPE=smtp
+
+# 1. SMTP 방식 설정
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
 SMTP_USER=your_email@gmail.com
 SMTP_PASSWORD=your_app_password
-RECIPIENT_EMAIL=recipient1@example.com,recipient2@example.com
-SENDER_NAME=AI 뉴스 알리미
 
+# 2. Naver Cloud Outbound Mailer 방식 설정
+NCLOUD_ACCESS_KEY=your_ncloud_access_key
+NCLOUD_SECRET_KEY=your_ncloud_secret_key
+NCLOUD_SENDER_ADDRESS=sender@yourdomain.com
+
+# 공통 이메일 설정
+SENDER_NAME=AI 뉴스 알리미
+DEFAULT_EMAIL_TEMPLATE=email_template.html
+
+# 수신자 설정 (JSON 형식)
+# 각 수신자별로 다른 템플릿을 지정할 수 있습니다.
+# 예시: [{"email": "user1@example.com"}, {"email": "user2@example.com", "template": "email_template_minimal.html"}]
+RECIPIENTS='[{"email": "recipient1@example.com"}, {"email": "recipient2@example.com"}]'
+```
+
+#### 기타 설정
+```env
 # News Settings
 NEWS_ARTICLE_COUNT=5
 ```
 
 ### 3. 실행
 
+다양한 CLI 옵션을 통해 실행 방식을 제어할 수 있습니다.
+
+#### 기본 실행 (이메일 발송)
 ```bash
 python main.py
+# 또는 명시적으로
+python main.py --notify email
 ```
+
+#### Teams로 알림 발송
+```bash
+python main.py --notify teams
+```
+
+#### 미리보기 생성
+- **이메일 미리보기**: 실제 발송 없이 `email_preview.html` 파일을 생성합니다.
+  ```bash
+  python main.py --notify email --preview
+  # 생성된 파일 바로 열기 (macOS)
+  python main.py --notify email --preview && open email_preview.html
+  ```
+- **Teams 미리보기**: 샘플 데이터를 Teams 채널로 직접 발송하여 형식을 테스트합니다.
+  ```bash
+  python main.py --notify teams --preview
+  ```
 
 ## 📰 뉴스 소스 설정
 
