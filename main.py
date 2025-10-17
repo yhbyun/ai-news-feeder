@@ -86,11 +86,17 @@ def main():
             logger.error("필수 설정값이 누락되었습니다.")
             sys.exit(1)
 
+        template_service = TemplateService()
+
         # 미리보기 모드 확인
         if '--preview' in sys.argv:
             mock_articles, categories = generate_mock_data()
-            template_service = TemplateService()
-            html_content, subject = template_service.generate_preview_html(mock_articles, categories)
+
+            # 기본 템플릿으로 미리보기 생성
+            preview_template = settings.default_email_template
+            logger.info(f"'{preview_template}' 템플릿을 사용하여 미리보기를 생성합니다.")
+
+            html_content, _ = template_service.generate_email_html(mock_articles, categories, preview_template)
 
             preview_file = "email_preview.html"
             with open(preview_file, "w", encoding="utf-8") as f:
@@ -101,8 +107,7 @@ def main():
         # 서비스 초기화
         news_service = NewsService(settings)
         ai_service = AIService(settings.gemini_api_key)
-        template_service = TemplateService()
-        email_service = EmailService(settings)
+        email_service = EmailService(settings, template_service)
 
         # 1. 뉴스 수집
         articles = news_service.fetch_ai_news()
@@ -133,9 +138,8 @@ def main():
             # 기본 카테고리 사용
             categories = [{"category_name": "주요 뉴스", "articles": list(range(len(processed_articles)))}]
 
-        # 4. 이메일 생성 및 발송
-        html_content, subject = template_service.generate_email_html(processed_articles, categories)
-        email_service.send_news_email(html_content, subject)
+        # 4. 이메일 발송
+        email_service.send_news_email(processed_articles, categories)
 
         logger.info("AI 뉴스 피더 작업이 성공적으로 완료되었습니다.")
 

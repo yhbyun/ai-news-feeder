@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8">
+    <title>{{ subject }}</title>
+    <style>
+        h2 { font-weight: 600; font-size: 18px; }
+        .article-meta {
+            margin-bottom: 8px;
+        }
+        .source {
+            font-size: 12px;
+            color: #718096;
+            font-style: italic;
+        }
+        .tags {
+            margin-top: 8px;
+            overflow: hidden;
+        }
+        .tag {
+            font-size: 11px;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+        img {width: 0; height: 0; display: none !important;}
+    </style>
+</head>
+<body>
+    {% for category_info in categories %}
+        <br>
+        <h2>{{ category_info.category_name }}</h2>
+        <br>
+        {% for index in category_info.articles %}
+            {% set article = processed_articles[index] %}
+            <p class="article">
+                <a href="{{ article.url }}" target="_blank">{{ article.korean_title }}</a>
+
+                <div class="summary">{{ article.summary | replace('\n', '<br>') }}</div>
+
+                <div class="article-meta">
+                    <span class="source">{{ article.source_name }}</span>
+                </div>
+
+                {% if article.tags %}
+                <div class="tags">
+                    {% for tag in article.tags %}
+                    <span class="tag">{{ tag }}{% if not loop.last %}, {% endif %}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </p>
+            <br>
+        {% endfor %}
+    {% endfor %}
+</body>
+</html>

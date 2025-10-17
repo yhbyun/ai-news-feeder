@@ -1,11 +1,18 @@
-from dataclasses import dataclass
-from typing import List, Dict, Any
+from dataclasses import dataclass, field
+from typing import List, Dict, Any, Optional
 import os
+import json
 from dotenv import load_dotenv
 
 # 로컬 테스트용 .env 파일 로드
 if 'CI' not in os.environ:
     load_dotenv()
+
+@dataclass
+class Recipient:
+    """수신자 정보"""
+    email: str
+    template: Optional[str] = None
 
 @dataclass
 class NewsSourceConfig:
@@ -38,8 +45,9 @@ class Settings:
     ncloud_secret_key: str
     ncloud_sender_address: str
 
-    recipient_emails: List[str]
+    recipients: List[Recipient]
     sender_name: str
+    default_email_template: str
 
     # News Settings
     article_count: int
@@ -130,8 +138,9 @@ class Settings:
             ncloud_secret_key=os.getenv("NCLOUD_SECRET_KEY", ""),
             ncloud_sender_address=os.getenv("NCLOUD_SENDER_ADDRESS", ""),
 
-            recipient_emails=[email.strip() for email in os.getenv("RECIPIENT_EMAIL", "").split(',') if email.strip()],
+            recipients=[Recipient(**r) for r in json.loads(os.getenv("RECIPIENTS", "[]"))],
             sender_name=os.getenv("SENDER_NAME", "AI 뉴스 알리미"),
+            default_email_template=os.getenv("DEFAULT_EMAIL_TEMPLATE", "email_template.html"),
             article_count=int(os.getenv("NEWS_ARTICLE_COUNT", "5"))
         )
 
@@ -150,7 +159,7 @@ class Settings:
             # 지원하지 않는 이메일 발송 타입
             return False
 
-        if not self.recipient_emails:
+        if not self.recipients:
             return False
 
         return True
