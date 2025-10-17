@@ -42,4 +42,6 @@ jobs:
           RECIPIENTS: ${{ vars.RECIPIENTS }}
           SENDER_NAME: ${{ vars.SENDER_NAME }}
           NEWS_ARTICLE_COUNT: ${{ vars.NEWS_ARTICLE_COUNT }}
-        run: python main.py --notify teams
+        run: |
+          python main.py --notify teams
+          python main.py
