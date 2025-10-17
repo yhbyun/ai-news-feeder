@@ -57,7 +57,7 @@ def generate_mock_data():
 def main():
     """스크립트의 메인 실행 함수"""
     parser = argparse.ArgumentParser(description="AI 뉴스 피더")
-    parser.add_argument('--notify', type=str, choices=['email', 'teams'], default='email',
+    parser.add_argument('--notify', type=str, choices=['email', 'teams', 'all'], default='email',
                         help="알림을 보낼 방식 (기본값: email)")
     parser.add_argument('--preview', action='store_true',
                         help="실제 발송 대신 이메일 HTML 미리보기를 생성합니다.")
@@ -70,18 +70,27 @@ def main():
             raise ConfigurationError("필수 API 키가 누락되었습니다.")
 
         # 알림 방식에 따른 설정 검증
-        if args.notify == 'email':
+        if args.notify == 'email' or args.notify == 'all':
             if not settings.validate_email_settings():
                 raise ConfigurationError("이메일 발송에 필요한 설정이 누락되었습니다.")
-        elif args.notify == 'teams':
+
+        if args.notify == 'teams' or args.notify == 'all':
             if not settings.validate_teams_settings():
-                raise ConfigurationError("MS Teams 발송에 필요한 웹훅 URL이 누락되었습니다.")
+                raise ConfigurationError("MS Teams 웹훅 발송에 필요한 설정이 누락되었습니다.")
 
         # 미리보기 모드 처리
         if args.preview:
             mock_articles, categories = generate_mock_data()
 
-            if args.notify == 'email':
+            # Teams 미리보기 (all 또는 teams)
+            if args.notify == 'teams' or args.notify == 'all':
+                logger.info(f"Teams 채널로 미리보기 메시지를 발송합니다...")
+                teams_service = TeamsService(settings)
+                teams_service.send_news_message(mock_articles, categories)
+                logger.info("Teams 미리보기 메시지가 성공적으로 발송되었습니다.")
+
+            # 이메일 미리보기 (all 또는 email)
+            if args.notify == 'email' or args.notify == 'all':
                 template_service = TemplateService()
                 preview_template = settings.default_email_template
                 logger.info(f"'{preview_template}' 템플릿을 사용하여 이메일 미리보기를 생성합니다.")
@@ -91,12 +100,6 @@ def main():
                 with open(preview_file, "w", encoding="utf-8") as f:
                     f.write(html_content)
                 logger.info(f"이메일 미리보기가 '{preview_file}' 파일로 저장되었습니다.")
-
-            elif args.notify == 'teams':
-                logger.info("Teams 채널로 미리보기 메시지를 발송합니다...")
-                teams_service = TeamsService(settings)
-                teams_service.send_news_message(mock_articles, categories)
-                logger.info("Teams 미리보기 메시지가 성공적으로 발송되었습니다.")
 
             return
 
@@ -129,13 +132,14 @@ def main():
             categories = [{"category_name": "주요 뉴스", "articles": list(range(len(processed_articles)))}]
 
         # 4. 알림 발송
-        if args.notify == 'email':
+        if args.notify == 'teams' or args.notify == 'all':
+            teams_service = TeamsService(settings)
+            teams_service.send_news_message(processed_articles, categories)
+
+        if args.notify == 'email' or args.notify == 'all':
             template_service = TemplateService()
             email_service = EmailService(settings, template_service)
             email_service.send_news_email(processed_articles, categories)
-        elif args.notify == 'teams':
-            teams_service = TeamsService(settings)
-            teams_service.send_news_message(processed_articles, categories)
 
         logger.info(f"AI 뉴스 피더 작업이 '{args.notify}' 방식으로 성공적으로 완료되었습니다.")
 
