@@ -31,6 +31,9 @@ class Settings:
     news_api_key: str
     gemini_api_key: str
 
+    # MS Teams Settings
+    ms_teams_webhook_url: str
+
     # Email Settings
     email_sender_type: str  # 'smtp' or 'ncloud'
     
@@ -127,6 +130,8 @@ class Settings:
             news_api_key=os.getenv("NEWS_API_KEY", ""),
             gemini_api_key=os.getenv("GEMINI_API_KEY", ""),
             
+            ms_teams_webhook_url=os.getenv("MS_TEAMS_WEBHOOK_URL", ""),
+
             email_sender_type=os.getenv("EMAIL_SENDER_TYPE", "smtp"),
 
             smtp_host=os.getenv("SMTP_HOST", ""),
@@ -144,11 +149,14 @@ class Settings:
             article_count=int(os.getenv("NEWS_ARTICLE_COUNT", "5"))
         )
 
-    def validate(self) -> bool:
-        """필수 설정값들이 올바르게 설정되었는지 검증합니다."""
+    def validate_common(self) -> bool:
+        """모든 알림 방식에 공통적으로 필요한 설정값들을 검증합니다."""
         if not self.news_api_key or not self.gemini_api_key:
             return False
+        return True
 
+    def validate_email_settings(self) -> bool:
+        """이메일 발송에 필요한 설정값들을 검증합니다."""
         if self.email_sender_type == 'smtp':
             if not all([self.smtp_host, self.smtp_user, self.smtp_password]):
                 return False
@@ -156,12 +164,17 @@ class Settings:
             if not all([self.ncloud_access_key, self.ncloud_secret_key, self.ncloud_sender_address]):
                 return False
         else:
-            # 지원하지 않는 이메일 발송 타입
-            return False
-
+            return False  # 지원하지 않는 이메일 발송 타입
+        
         if not self.recipients:
             return False
+            
+        return True
 
+    def validate_teams_settings(self) -> bool:
+        """MS Teams 발송에 필요한 설정값들을 검증합니다."""
+        if not self.ms_teams_webhook_url:
+            return False
         return True
 
     def get_enabled_sources(self) -> List[NewsSourceConfig]:

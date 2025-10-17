@@ -36,8 +36,9 @@ jobs:
           NCLOUD_ACCESS_KEY: ${{ secrets.NCLOUD_ACCESS_KEY }}
           NCLOUD_SECRET_KEY: ${{ secrets.NCLOUD_SECRET_KEY }}
           NCLOUD_SENDER_ADDRESS: ${{ secrets.NCLOUD_SENDER_ADDRESS }}
+          MS_TEAMS_WEBHOOK_URL: ${{ secrets.MS_TEAMS_WEBHOOK_URL }}
           EMAIL_SENDER_TYPE: ${{ vars.EMAIL_SENDER_TYPE }}
           RECIPIENT_EMAIL: ${{ vars.RECIPIENT_EMAIL }}
           SENDER_NAME: ${{ vars.SENDER_NAME }}
           NEWS_ARTICLE_COUNT: ${{ vars.NEWS_ARTICLE_COUNT }}
-        run: python main.py
+        run: python main.py --notify teams
